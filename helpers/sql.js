@@ -21,5 +21,34 @@ function sqlForPartialUpdate(dataToUpdate, jsToSql) {
     values: Object.values(dataToUpdate),
   };
 }
+// query = {name:"someName", minEmployees:num, maxEmployees:num}
+function queryToSql(query) {
+  const sql = [];
 
-module.exports = { sqlForPartialUpdate };
+  if (query.name) {
+    query.name = `%${query.name}%`;
+    const num = sql.length + 1;
+    sql.push(`LOWER("name") LIKE LOWER($${num})`);
+  }
+  if (query.maxEmployees) {
+    if (query.minEmployees && query.minEmployees > query.maxEmployees) {
+      throw new BadRequestError("Minimum Employees > Max Employees");
+    }
+    const num = sql.length + 1;
+    const num2 = sql.length + 2;
+    sql.push(
+      `"num_employees" BETWEEN ${
+        query.minEmployees ? `$${num2}` : 0
+      } AND $${num} `
+    );
+  } else if (query.minEmployees) {
+    const num = sql.length + 1;
+    sql.push(`"num_employees" >= $${num}`);
+  }
+  return {
+    setCols: sql.join(", "),
+    values: Object.values(query).sort((a, b) => b - a),
+  };
+}
+
+module.exports = { sqlForPartialUpdate, queryToSql };

@@ -11,6 +11,7 @@ const {
   commonAfterEach,
   commonAfterAll,
   u1Token,
+  u2Token,
 } = require("./_testCommon");
 
 beforeAll(commonBeforeAll);
@@ -60,6 +61,14 @@ describe("POST /companies", function () {
       })
       .set("authorization", `Bearer ${u1Token}`);
     expect(resp.statusCode).toEqual(400);
+  });
+
+  test("non admin cannot", async function () {
+    const resp = await request(app)
+      .post("/companies")
+      .send(newCompany)
+      .set("authorization", `Bearer ${u2Token}`);
+    expect(resp.statusCode).toEqual(401);
   });
 });
 
@@ -111,7 +120,7 @@ describe("GET /companies", function () {
 
 describe("GET /companies/query", function () {
   test("search filter for name", async function () {
-    const resp = await request(app).get("/companies?name=C1");
+    const resp = await request(app).get("/companies?name=c1");
     expect(resp.body).toEqual({
       companies: [
         {
@@ -168,7 +177,23 @@ describe("GET /companies/query", function () {
   });
   test("search filter for min and max employees", async function () {
     const resp = await request(app).get(
-      "/companies?minEmployees=2&maxEmployees=2"
+      "/companies?maxEmployees=2&minEmployees=2"
+    );
+    expect(resp.body).toEqual({
+      companies: [
+        {
+          handle: "c2",
+          name: "C2",
+          description: "Desc2",
+          numEmployees: 2,
+          logoUrl: "http://c2.img",
+        },
+      ],
+    });
+  });
+  test("search filter for min and max employees in different order", async function () {
+    const resp = await request(app).get(
+      "/companies?minEmployees=1&maxEmployees=2"
     );
     expect(resp.body).toEqual({
       companies: [
@@ -188,6 +213,12 @@ describe("GET /companies/query", function () {
         },
       ],
     });
+  });
+  test("search filter for min and max but min > max", async function () {
+    const resp = await request(app).get(
+      "/companies?minEmployees=3&maxEmployees=1"
+    );
+    expect(resp.statusCode).toEqual(400);
   });
 });
 
@@ -253,6 +284,15 @@ describe("PATCH /companies/:handle", function () {
     });
     expect(resp.statusCode).toEqual(401);
   });
+  test("unauth for non admin", async function () {
+    const resp = await request(app)
+      .patch(`/companies/c1`)
+      .send({
+        name: "C1-new",
+      })
+      .set("authorization", `Bearer ${u2Token}`);
+    expect(resp.statusCode).toEqual(401);
+  });
 
   test("not found on no such company", async function () {
     const resp = await request(app)
@@ -297,6 +337,12 @@ describe("DELETE /companies/:handle", function () {
 
   test("unauth for anon", async function () {
     const resp = await request(app).delete(`/companies/c1`);
+    expect(resp.statusCode).toEqual(401);
+  });
+  test("unauth for non admin", async function () {
+    const resp = await request(app)
+      .delete(`/companies/c1`)
+      .set("authorization", `Bearer ${u2Token}`);
     expect(resp.statusCode).toEqual(401);
   });
 
