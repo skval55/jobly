@@ -51,4 +51,28 @@ function queryToSql(query) {
   };
 }
 
-module.exports = { sqlForPartialUpdate, queryToSql };
+/** function to make SQL queryable string from the jobs url
+ *
+ */
+function queryToSqlJobs(query) {
+  const sql = [];
+  if (query.title) {
+    query.title = `%${query.title}%`;
+    const num = sql.length + 1;
+    sql.push(`LOWER("title") LIKE LOWER($${num})`);
+  }
+  if (query.minSalary) {
+    const num = sql.length + 1;
+    sql.push(`"salary" >= $${num}`);
+  }
+  if (query.hasEquity && query.hasEquity == true) {
+    sql.push(`"equity" > 0`);
+    delete query.hasEquity;
+  }
+  return {
+    setCols: sql.join(", "),
+    values: Object.values(query),
+  };
+}
+
+module.exports = { sqlForPartialUpdate, queryToSql, queryToSqlJobs };
