@@ -7,32 +7,31 @@ const express = require("express");
 
 const { BadRequestError } = require("../expressError");
 const { ensureLoggedIn, ensureAdmin } = require("../middleware/auth");
-const Company = require("../models/company");
+const Job = require("../models/jobs");
 
-const companyNewSchema = require("../schemas/companyNew.json");
-const companyUpdateSchema = require("../schemas/companyUpdate.json");
+const jobNewSchema = require("../schemas/jobNew.json");
+const jobUpdateSchema = require("../schemas/jobUpdate.json");
 
 const router = new express.Router();
 
-/** POST / { company } =>  { company }
+/** POST / { job } =>  { job }
  *
- * company should be { handle, name, description, numEmployees, logoUrl }
+ * company should be { title, salary, equity, company_handle }
  *
- * Returns { handle, name, description, numEmployees, logoUrl }
+ * Returns { title, salary, equity, company_handle }
  *
  * Authorization required: admin
  */
 
 router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
   try {
-    const validator = jsonschema.validate(req.body, companyNewSchema);
+    const validator = jsonschema.validate(req.body, jobNewSchema);
     if (!validator.valid) {
       const errs = validator.errors.map((e) => e.stack);
       throw new BadRequestError(errs);
     }
-
-    const company = await Company.create(req.body);
-    return res.status(201).json({ company });
+    const job = await Job.create(req.body);
+    return res.status(201).json({ job });
   } catch (err) {
     return next(err);
   }
@@ -52,79 +51,78 @@ router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
 router.get("/", async function (req, res, next) {
   try {
     if (Object.keys(req.query).length > 0) {
-      let companies = await Company.searchQuery(req.query);
+      let jobs = await Job.searchQuery(req.query);
 
-      return res.json({ companies });
+      return res.json({ jobs });
     } else {
-      let companies = await Company.findAll();
-      return res.json({ companies });
+      let jobs = await Job.findAll();
+      return res.json({ jobs });
     }
   } catch (err) {
     return next(err);
   }
 });
 
-/** GET /[handle]  =>  { company }
+/** GET /[id]  =>  { job }
  *
- *  Company is { handle, name, description, numEmployees, logoUrl, jobs }
- *   where jobs is [{ id, title, salary, equity }, ...]
+ *  Job is { title, salary, equity, company_handle }
  *
  * Authorization required: none
  */
 
-router.get("/:handle", async function (req, res, next) {
+router.get("/:id", async function (req, res, next) {
   try {
-    const company = await Company.get(req.params.handle);
-    return res.json({ company });
+    const job = await Job.findJob(req.params.id);
+    return res.json({ job });
   } catch (err) {
     return next(err);
   }
 });
 
-/** PATCH /[handle] { fld1, fld2, ... } => { company }
+/** PATCH /[id] { fld1, fld2, ... } => { job }
  *
- * Patches company data.
+ * Patches job data.
  *
- * fields can be: { name, description, numEmployees, logo_url }
+ * fields can be: { title, salary, equity }
  *
- * Returns { handle, name, description, numEmployees, logo_url }
+ * Returns { id, title, salary, equity, company_handle }
  *
  * Authorization required: admin
  */
 
 router.patch(
-  "/:handle",
+  "/:id",
   ensureLoggedIn,
   ensureAdmin,
   async function (req, res, next) {
     try {
-      const validator = jsonschema.validate(req.body, companyUpdateSchema);
+      const validator = jsonschema.validate(req.body, jobUpdateSchema);
       if (!validator.valid) {
         const errs = validator.errors.map((e) => e.stack);
         throw new BadRequestError(errs);
       }
 
-      const company = await Company.update(req.params.handle, req.body);
-      return res.json({ company });
+      const job = await Job.update(req.params.id, req.body);
+      return res.json({ job });
     } catch (err) {
       return next(err);
     }
   }
 );
 
-/** DELETE /[handle]  =>  { deleted: handle }
+/** DELETE /[id]  =>  { deleted: id }
  *
  * Authorization: admin
  */
 
 router.delete(
-  "/:handle",
+  "/:id",
   ensureLoggedIn,
   ensureAdmin,
   async function (req, res, next) {
     try {
-      await Company.remove(req.params.handle);
-      return res.json({ deleted: req.params.handle });
+      await Job.remove(req.params.id);
+      return res.json({ deleted: req.params.id });
     } catch (err) {
       return next(err);
     }

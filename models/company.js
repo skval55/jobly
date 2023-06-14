@@ -76,8 +76,20 @@ class Company {
            WHERE handle = $1`,
       [handle]
     );
-
-    const company = companyRes.rows[0];
+    const jobRes = await db.query(
+      `SELECT id,
+                  title,
+                  salary,
+                  equity
+           FROM jobs
+           WHERE company_handle = $1`,
+      [handle]
+    );
+    let company = companyRes.rows[0];
+    const jobs = jobRes.rows;
+    if (jobs.length > 0) {
+      company.jobs = jobs;
+    }
 
     if (!company) throw new NotFoundError(`No company: ${handle}`);
 
@@ -92,13 +104,13 @@ class Company {
   static async searchQuery(query) {
     const { setCols, values } = queryToSql(query);
     const querySql = `SELECT handle,
-                  name,
-                  description,
-                  num_employees AS "numEmployees",
-                  logo_url AS "logoUrl"
-           FROM companies
-           WHERE ${setCols}
-           ORDER BY name`;
+    name,
+    description,
+    num_employees AS "numEmployees",
+    logo_url AS "logoUrl"
+    FROM companies
+    WHERE ${setCols}
+    ORDER BY name`;
     const result = await db.query(querySql, [...values]);
     return result.rows;
   }

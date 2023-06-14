@@ -13,14 +13,13 @@ class Job {
    *
    */
   static async create({ title, salary, equity, company_handle }) {
-    const result = db.query(
+    const result = await db.query(
       `INSERT INTO jobs (title, salary, equity, company_handle)
-    VALUES ($1, $2, $3, $4
+    VALUES ($1, $2, $3, $4)
         RETURNING title, salary, equity, company_handle`,
       [title, salary, equity, company_handle]
     );
     const job = result.rows[0];
-
     return job;
   }
   /** Find all jobs
@@ -52,14 +51,15 @@ class Job {
    *
    */
   static async findJob(id) {
-    const jobResult =
-      (`SELECT title,
+    const jobResult = await db.query(
+      `SELECT title,
                     salary,
                     equity,
                     company_handle
                 FROM jobs
                 WHERE id = $1`,
-      [id]);
+      [id]
+    );
     const job = jobResult.rows[0];
     if (!job) throw new NotFoundError(`No job with id: ${id}`);
     return job;

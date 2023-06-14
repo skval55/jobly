@@ -45,8 +45,9 @@ function queryToSql(query) {
     const num = sql.length + 1;
     sql.push(`"num_employees" >= $${num}`);
   }
+
   return {
-    setCols: sql.join(", "),
+    setCols: sql.join(" AND "),
     values: Object.values(query).sort((a, b) => b - a),
   };
 }
@@ -65,12 +66,13 @@ function queryToSqlJobs(query) {
     const num = sql.length + 1;
     sql.push(`"salary" >= $${num}`);
   }
-  if (query.hasEquity && query.hasEquity == true) {
+
+  if (query.hasEquity === "true") {
     sql.push(`"equity" > 0`);
     delete query.hasEquity;
   }
   return {
-    setCols: sql.join(", "),
+    setCols: sql.join(" AND "),
     values: Object.values(query),
   };
 }
