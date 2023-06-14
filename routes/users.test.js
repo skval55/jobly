@@ -341,3 +341,43 @@ describe("DELETE /users/:username", function () {
     expect(resp.statusCode).toEqual(404);
   });
 });
+
+/**************************************** POST /users/:username/jobs/:id */
+
+describe("POST /users/:username/jobs/:id", function () {
+  test("works for admin appling for someone else", async function () {
+    const jobQuery = `SELECT id, title FROM jobs WHERE title = 'j1'`;
+    let jobResult = await db.query(jobQuery);
+    const jobId = jobResult.rows[0].id;
+    const resp = await request(app)
+      .post(`/users/u2/jobs/${jobId}`)
+      .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(201);
+    expect(resp.body).toEqual({ applied: jobId });
+  });
+  test("works for curr user applying as curr user non admin", async function () {
+    const jobQuery = `SELECT id, title FROM jobs WHERE title = 'j1'`;
+    let jobResult = await db.query(jobQuery);
+    const jobId = jobResult.rows[0].id;
+    const resp = await request(app)
+      .post(`/users/u2/jobs/${jobId}`)
+      .set("authorization", `Bearer ${u2Token}`);
+    expect(resp.statusCode).toEqual(201);
+    expect(resp.body).toEqual({ applied: jobId });
+  });
+  test("doesn't work for non admin", async function () {
+    const jobQuery = `SELECT id, title FROM jobs WHERE title = 'j1'`;
+    let jobResult = await db.query(jobQuery);
+    const jobId = jobResult.rows[0].id;
+    const resp = await request(app)
+      .post(`/users/u1/jobs/${jobId}`)
+      .set("authorization", `Bearer ${u2Token}`);
+    expect(resp.statusCode).toEqual(401);
+  });
+  test("doesn't work for with wrong data", async function () {
+    const resp = await request(app)
+      .post(`/users/nonUser/jobs/0`)
+      .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(400);
+  });
+});

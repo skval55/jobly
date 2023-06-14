@@ -214,8 +214,7 @@ describe("update", function () {
 describe("remove", function () {
   test("works", async function () {
     await User.remove("u1");
-    const res = await db.query(
-        "SELECT * FROM users WHERE username='u1'");
+    const res = await db.query("SELECT * FROM users WHERE username='u1'");
     expect(res.rows.length).toEqual(0);
   });
 
@@ -225,6 +224,36 @@ describe("remove", function () {
       fail();
     } catch (err) {
       expect(err instanceof NotFoundError).toBeTruthy();
+    }
+  });
+});
+/************************************** apply */
+
+describe("apply", function () {
+  test("works", async function () {
+    const jobQuery = `SELECT id, title FROM jobs WHERE title = 'j1'`;
+    let jobResult = await db.query(jobQuery);
+    let applied = await User.apply("u1", jobResult.rows[0].id);
+    applied = applied;
+    expect(applied).toEqual({ username: "u1", job_id: jobResult.rows[0].id });
+  });
+  test("doesnt work with invalid params", async function () {
+    try {
+      let applied = await User.apply("shrek", 12);
+      fail();
+    } catch (err) {
+      expect(err instanceof BadRequestError).toBeTruthy();
+    }
+  });
+  test("doesnt work when duplicate", async function () {
+    try {
+      const jobQuery = `SELECT id, title FROM jobs WHERE title = 'j1'`;
+      let jobResult = await db.query(jobQuery);
+      let applied1 = await User.apply("u1", jobResult.rows[0].id);
+      let applied2 = await User.apply("u1", jobResult.rows[0].id);
+      fail();
+    } catch (err) {
+      expect(err instanceof BadRequestError).toBeTruthy();
     }
   });
 });

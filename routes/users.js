@@ -132,4 +132,21 @@ router.delete(
   }
 );
 
+/** POST job application => { applied: job_id }
+ *
+ * Authorization required: admin or curr user applying
+ */
+router.post(
+  "/:username/jobs/:id",
+  ensureLoggedIn,
+  ensureAdminOrCurrUser,
+  async function (req, res, next) {
+    try {
+      const result = await User.apply(req.params.username, req.params.id);
+      return res.status(201).json({ applied: result.job_id });
+    } catch (err) {
+      return next(err);
+    }
+  }
+);
 module.exports = router;
